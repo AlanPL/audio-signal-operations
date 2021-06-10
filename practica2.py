@@ -47,6 +47,55 @@ def playAudio(filename):
     stream.close()    
     p.terminate()
 
+def plotTresAudios(archivo1, archivo2, archivo3):
+    sampleRate, audioBuffer1 = scipy.io.wavfile.read(archivo1)
+    sampleRate, audioBuffer2 = scipy.io.wavfile.read(archivo2)
+    sampleRate, audioBuffer3 = scipy.io.wavfile.read(archivo3)
+
+    print('Longitud del arreglo de datos de cada audio: ',len(audioBuffer1))
+    duration = len(audioBuffer1)/sampleRate
+    time = np.arange(0,duration,1/sampleRate) #time vector
+    originalPlot = plt.figure(1)
+
+    plt.subplot(3, 1, 1)
+    plt.plot(time,audioBuffer1, '#e36b2c', label="Audio 1")
+    plt.ylabel('Amplitud')
+    plt.title("Audio 1, Audio 2 & Resultado")
+
+    plt.subplot(3, 1, 2)
+    plt.plot(time,audioBuffer2, '#6dc36d', label="Audio 2")
+    plt.ylabel('Amplitud')
+
+    plt.subplot(3, 1, 3)
+    plt.plot(time,audioBuffer3, '#109dfa', label="Resultado")
+
+    plt.legend()
+    plt.xlabel('Tiempo [s]')
+    plt.ylabel('Amplitud')
+    plt.show()
+
+def plotDosAudios(archivo1, archivo2):
+    sampleRate, audioBuffer1 = scipy.io.wavfile.read(archivo1)
+    sampleRate, audioBuffer2 = scipy.io.wavfile.read(archivo2)
+
+    print('Longitud del arreglo de datos de cada audio: ',len(audioBuffer1))
+    duration = len(audioBuffer1)/sampleRate
+    time = np.arange(0,duration,1/sampleRate) #time vector
+    originalPlot = plt.figure(1)
+
+    plt.subplot(2, 1, 1)
+    plt.plot(time,audioBuffer1,'#6dc36d', label="Audio 1")
+    plt.ylabel('Amplitud')
+    plt.title("Audio 1 & Resultado")
+
+    plt.subplot(2, 1, 2)
+    plt.plot(time,audioBuffer2, '#109dfa', label="Audio 2")
+
+    plt.legend()
+    plt.xlabel('Tiempo [s]')
+    plt.ylabel('Amplitud')
+    plt.show()
+
 def plotAudios(archivo1, archivo2):
     sampleRate, audioBuffer1 = scipy.io.wavfile.read(archivo1)
     sampleRate, audioBuffer2 = scipy.io.wavfile.read(archivo2)
@@ -95,6 +144,14 @@ def opSumaResta(archivo1, archivo2, filename, factor):
         ### read 1 frame and the position will updated ###
         wavesSum[i] = data1[i]+factor*data2[i]
     scipy.io.wavfile.write(filename, sampleRate, wavesSum.astype(np.int16))
+
+def opAmplificacion(archivo1, filename, factor):
+    sampleRate, data = scipy.io.wavfile.read(archivo1)
+    newWave = np.int16([0 for i in range(len(data))])
+    for i in range(0, len(data)):
+        newWave[i] = factor*data[i]
+
+    scipy.io.wavfile.write(filename, sampleRate, newWave.astype(np.int16))
 
 def opDiezmacion(archivo1, filename, factor):
     sampleRate, data = scipy.io.wavfile.read(archivo1)
@@ -176,6 +233,8 @@ archivo1= os.path.join(dirname, "audio1.wav")
 archivo2= os.path.join(dirname, "audio2.wav")
 suma= os.path.join(dirname, "suma.wav")
 resta= os.path.join(dirname, "resta.wav")
+amplificacion= os.path.join(dirname, "amplificacion.wav")
+atenuacion= os.path.join(dirname, "atenuacion.wav")
 diezmacion= os.path.join(dirname, "diezmacion.wav")
 interpolacion= os.path.join(dirname, "interpolacion.wav")
 desplazamiento= os.path.join(dirname, "desplazamiento.wav")
@@ -205,10 +264,11 @@ while menuMain != 0:
         playAudio("audio1.wav")        
         time.sleep(1)
         playAudio("audio2.wav")        
-        plotAudios(archivo1, archivo2)
+     #   plotAudios(archivo1, archivo2)
 
         opSumaResta(archivo1, archivo2, suma, 1)
-        plotAudio(suma)
+     #   plotAudio(suma)
+        plotTresAudios(archivo1, archivo2, suma)
         time.sleep(1)
         playAudio("suma.wav")
     elif menuMain == 2: #Resta
@@ -216,32 +276,50 @@ while menuMain != 0:
         playAudio("audio1.wav")        
         time.sleep(1)
         playAudio("audio2.wav")        
-        plotAudios(archivo1, archivo2)
+        #plotAudios(archivo1, archivo2)
 
         opSumaResta(archivo1, archivo2, resta, -1)
-        plotAudio(resta)
+        #plotAudio(resta)
+        plotTresAudios(archivo1, archivo2, resta)
         time.sleep(1) #Para que no se reproduzcan inmediatamente
         playAudio("resta.wav")
     elif menuMain == 3: #Amplificación
-        print("Aqui va la amplificacion")
+        print("Reproduciendo audios...")
+        playAudio("audio1.wav")        
+       # plotAudio(archivo1)
+        factor = int(input("Ingrese el factor de amplificación: "))
+        opAmplificacion(archivo1, amplificacion, factor)
+        #plotAudio(amplificacion)
+        plotDosAudios(archivo1, amplificacion)
+        playAudio("amplificacion.wav")
     elif menuMain == 4: #Atenuacion
-        print("Aqui va la atenuacion")
+        print("Reproduciendo audios...")
+        playAudio("audio1.wav")        
+        #plotAudio(archivo1)
+        factor = int(input("Ingrese el factor de atenuacion: "))
+        factor=1/factor     
+        opAmplificacion(archivo1, atenuacion, factor)
+        #plotAudio(atenuacion)
+        plotDosAudios(archivo1, atenuacion)
+        playAudio("atenuacion.wav")
     elif menuMain == 5: #Reflejo
         print("Reproduciendo audio...")
         playAudio("audio1.wav")
-        plotAudio(archivo1)
+        #plotAudio(archivo1)
 
         opReflejo(archivo1,ref)
-        plotAudio(ref)
+        #plotAudio(ref)
+        plotDosAudios(archivo1, ref)        
         playAudio("reflejo.wav")
     elif menuMain == 6: #Desplazamiento
         print("Reproduciendo audio...")
         playAudio("audio1.wav")
-        plotAudio(archivo1)
+        #plotAudio(archivo1)
         factor = int(input("Ingrese el factor de desplazamiento: "))
         
         opDesplazamiento(archivo1, desplazamiento, factor)
-        plotAudio(desplazamiento)
+        #plotAudio(desplazamiento)
+        plotDosAudios(archivo1, desplazamiento)
         playAudio("desplazamiento.wav")
     elif menuMain == 7: #Diezmacion
         print("Reproduciendo audio...")   
@@ -251,6 +329,7 @@ while menuMain != 0:
         
         opDiezmacion(archivo1, diezmacion, factor)
         plotAudio(diezmacion)
+       
         playAudio("diezmacion.wav")
     elif menuMain == 8: #Interpolacion
         print("Reproduciendo audio...")
