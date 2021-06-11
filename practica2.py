@@ -247,11 +247,14 @@ stream=audio.open(format=FORMAT,channels=CHANNELS,
                     frames_per_buffer=CHUNK)
 figureIndex = 1
 
-#Se graban dos audios para realizar operaciones
-input("Presione Enter para grabar el primer audio...")
-recordAudio(archivo1, stream)
-input("Presione Enter para grabar el segundo audio...")
-recordAudio(archivo2, stream)
+seleccion = int(input("Selecciona: \n 1. Grabar audios \n 2. Utilizar audio1.wav y audio2.wav de carpeta \n"))
+if seleccion==1:
+    #Se graban dos audios para realizar operaciones
+    input("Presione Enter para grabar el primer audio...")
+    recordAudio(archivo1, stream)
+    input("Presione Enter para grabar el segundo audio...")
+    recordAudio(archivo2, stream)
+
 #Cierra flujos de grabacion
 stream.close()
 audio.terminate()
