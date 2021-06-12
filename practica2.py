@@ -211,6 +211,7 @@ def opConvol(archivo1,archivo2,filename):
     sampleRate, data1 = scipy.io.wavfile.read(archivo1)
     sampleRate, data2 = scipy.io.wavfile.read(archivo2)
     waveConv = np.int16([0 for i in range(len(data1)+len(data2)-1)])
+    tempSignal = np.int16([0 for i in range(len(data2))])
     #Atenuacion de señales
     for l in range(0,len(data1)):
         data1[l] = data1[l]/1200
@@ -219,7 +220,32 @@ def opConvol(archivo1,archivo2,filename):
         data2[k] = data2[k]/1200
 
     waveConv = np.convolve(data1,data2,'full')
-    #print(len(waveConv))
+
+    ######################################################
+    #Implementacion del algoritmo
+    #Reflejo de la señal    
+    
+    """lenA2 = len(data2)
+    for i in range(0,lenA2):
+        tempSignal[i] = data2[lenA2-1]
+        lenA2-=1
+    data2=tempSignal;
+
+    lenA1 = len(data1)
+    lenA2 = len(data2)
+    totLen = lenA1+lenA2-1
+    #Algoritmo
+    for i in range(0,totLen):
+        a2_start = max(0,i-lenA1+1)
+        a2_end = min(i+1,lenA2)
+        a1_start = min(i,lenA1-1)
+        for j in range(a2_start,a2_end):
+            temp=data1[a1_start]*data2[j]
+            waveConv[i] += temp 
+     
+            a1_start-=1"""
+    ##########################################################
+
     print("Finalizado")
     scipy.io.wavfile.write(filename, sampleRate, waveConv.astype(np.int16))
 
