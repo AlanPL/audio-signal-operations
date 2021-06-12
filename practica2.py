@@ -127,47 +127,82 @@ def plotAudio(archivo):
     plt.title(os.path.basename(archivo))
     plt.show()
 
+def plotArrays(data1,data2,data3,title):
+    originalPlot = plt.figure(1)    
+    time1 = range(0,len(data1))
+    time2 = range(0,len(data2))
+    time3 = range(0,len(data3))
+
+    plt.subplot(3, 1, 1)
+    plt.plot(time1,data1,'#e36b2c', label="Datos 1")
+    plt.legend()
+    plt.xlabel('# Muestra')
+    plt.ylabel('Amplitud')
+    plt.title("Datos")
+   
+    plt.subplot(3, 1, 2)
+    plt.plot(time2,data2, '#6dc36d', label="Datos 2")
+    plt.xlabel('# Muestra')
+    plt.title("Datos")
+
+    plt.subplot(3, 1, 3)
+    plt.plot(time3,data3, '#6dc36d', label="Resultado")
+    plt.ylabel('Amplitud')
+    plt.xlabel('# Muestra')
+    plt.title(title)
+    plt.show()
+#origen,destino
+def reflejo(data,wave):
+    j = len(data);
+    for i in range(0, j):
+        wave[i] = data[j-1]
+        j-=1
+
 def opReflejo(archivo,filename):
     sampleRate, data1 = scipy.io.wavfile.read(archivo)
     wave = np.int16([0 for i in range(len(data1))])
-    j = len(data1);
-    for i in range(0, j):
-        wave[i] = data1[j-1]
-        j-=1    
+
+    reflejo(data1,wave)
+
     scipy.io.wavfile.write(filename, sampleRate, wave.astype(np.int16))
+
+def sumaresta(data1,data2,waves,factor):
+    for i in range(0, len(data1)):
+        ### read 1 frame and the position will updated ###
+        waves[i] = data1[i]+factor*data2[i]
 
 def opSumaResta(archivo1, archivo2, filename, factor):
     sampleRate, data1 = scipy.io.wavfile.read(archivo1)
     sampleRate, data2 = scipy.io.wavfile.read(archivo2)
     wavesSum = np.int16([0 for i in range(len(data1))])
-    for i in range(0, len(data1)):
-        ### read 1 frame and the position will updated ###
-        wavesSum[i] = data1[i]+factor*data2[i]
+    sumaresta(data1,data2,wavesSum,factor)
     scipy.io.wavfile.write(filename, sampleRate, wavesSum.astype(np.int16))
 
-def opAmplificacion(archivo1, filename, factor):
-    sampleRate, data = scipy.io.wavfile.read(archivo1)
-    newWave = np.int16([0 for i in range(len(data))])
+def amplif(data,newWave,factor):
     for i in range(0, len(data)):
         newWave[i] = factor*data[i]
 
+def opAmplificacion(archivo1, filename, factor):
+    sampleRate, data = scipy.io.wavfile.read(archivo1)
+    newWave = np.int16([0 for i in range(len(data))])  
+    amplif(data,newWave,factor)
     scipy.io.wavfile.write(filename, sampleRate, newWave.astype(np.int16))
 
-def opDiezmacion(archivo1, filename, factor):
-    sampleRate, data = scipy.io.wavfile.read(archivo1)
-    leng = int(len(data)/factor)+ len(data)%factor
-    newWave = np.int16([0 for i in range(leng)])
+def diezma(data,newWave,factor):
     index = 0
     for i in range(0, len(data)):
         if(i%factor==0):
             newWave[index] = data[i]
             index+=1
+
+def opDiezmacion(archivo1, filename, factor):
+    sampleRate, data = scipy.io.wavfile.read(archivo1)
+    leng = int(len(data)/factor)+ len(data)%factor
+    newWave = np.int16([0 for i in range(leng)])
+    diezma(data,newWave,factor)
     scipy.io.wavfile.write(filename, sampleRate, newWave.astype(np.int16))
 
-def opInterpolacion(archivo1, filename, factor, tipo):
-    sampleRate, data = scipy.io.wavfile.read(archivo1)
-    leng = int(len(data)*factor)
-    newWave = np.int16([0 for i in range(leng)])
+def interpo(data,newWave,factor,tipo):
     index = 0
 
     increment = 0
@@ -188,12 +223,15 @@ def opInterpolacion(archivo1, filename, factor, tipo):
                 newWave[i] = data[index-1]
             elif(tipo==2):
                 newWave[i] = newWave[i-1]+increment
-                
+
+def opInterpolacion(archivo1, filename, factor, tipo):
+    sampleRate, data = scipy.io.wavfile.read(archivo1)
+    leng = int(len(data)*factor)
+    newWave = np.int16([0 for i in range(leng)])
+    interpo(data,newWave,factor)               
     scipy.io.wavfile.write(filename, sampleRate, newWave.astype(np.int16))
 
-def opDesplazamiento(archivo1, filename, factor):
-    sampleRate, data = scipy.io.wavfile.read(archivo1)
-    newWave = np.int16([0 for i in range(len(data))])
+def despla(data,newWave,factor):
     index = 0
     if(factor>=0):
         for i in range(factor, len(data)):
@@ -205,48 +243,56 @@ def opDesplazamiento(archivo1, filename, factor):
             newWave[i] = data[index]
             index+=1
 
+def opDesplazamiento(archivo1, filename, factor):
+    sampleRate, data = scipy.io.wavfile.read(archivo1)
+    newWave = np.int16([0 for i in range(len(data))])
+    despla(data,newWave,factor)
     scipy.io.wavfile.write(filename, sampleRate, newWave.astype(np.int16))
+
+def convo(data1,data2,waveConv):
+    if esAudio:
+        #Atenuacion de señales
+        for l in range(0,len(data1)):
+            data1[l] = data1[l]/1200
+
+        for k in range(0,len(data2)):
+            data2[k] = data2[k]/1200
+        
+        waveConv = np.convolve(data1,data2,'full')
+    else:
+        ######################################################
+        #Implementacion del algoritmo
+        #Reflejo de la señal
+        """tempSignal = np.int16([0 for i in range(len(data2))])
+        lenA2 = len(data2)
+        for i in range(0,lenA2):
+            tempSignal[i] = data2[lenA2-1]
+            lenA2-=1
+        data2=tempSignal;"""
+
+        lenA1 = len(data1)
+        lenA2 = len(data2)
+        totLen = lenA1+lenA2-1
+        #Algoritmo
+        for i in range(0,totLen):
+            a2_start = max(0,i-lenA1+1)
+            a2_end = min(i+1,lenA2)
+            a1_start = min(i,lenA1-1)
+            for j in range(a2_start,a2_end):
+                temp=data1[a1_start]*data2[j]
+                if a1_start < 0:
+                    temp=0
+                waveConv[i] += temp 
+                a1_start-=1
+        ##########################################################
+
+    print("Finalizado")
 
 def opConvol(archivo1,archivo2,filename):
     sampleRate, data1 = scipy.io.wavfile.read(archivo1)
     sampleRate, data2 = scipy.io.wavfile.read(archivo2)
     waveConv = np.int16([0 for i in range(len(data1)+len(data2)-1)])
-    tempSignal = np.int16([0 for i in range(len(data2))])
-    #Atenuacion de señales
-    for l in range(0,len(data1)):
-        data1[l] = data1[l]/1200
-
-    for k in range(0,len(data2)):
-        data2[k] = data2[k]/1200
-
-    waveConv = np.convolve(data1,data2,'full')
-
-    ######################################################
-    #Implementacion del algoritmo
-    #Reflejo de la señal    
-    
-    """lenA2 = len(data2)
-    for i in range(0,lenA2):
-        tempSignal[i] = data2[lenA2-1]
-        lenA2-=1
-    data2=tempSignal;
-
-    lenA1 = len(data1)
-    lenA2 = len(data2)
-    totLen = lenA1+lenA2-1
-    #Algoritmo
-    for i in range(0,totLen):
-        a2_start = max(0,i-lenA1+1)
-        a2_end = min(i+1,lenA2)
-        a1_start = min(i,lenA1-1)
-        for j in range(a2_start,a2_end):
-            temp=data1[a1_start]*data2[j]
-            waveConv[i] += temp 
-     
-            a1_start-=1"""
-    ##########################################################
-
-    print("Finalizado")
+    convo(data1,data2,waveConv)
     scipy.io.wavfile.write(filename, sampleRate, waveConv.astype(np.int16))
 
 FORMAT=pyaudio.paInt16
@@ -272,15 +318,37 @@ stream=audio.open(format=FORMAT,channels=CHANNELS,
                     rate=RATE, input=True,
                     frames_per_buffer=CHUNK)
 figureIndex = 1
+esAudio=True
 
-seleccion = int(input("Selecciona: \n 1. Grabar audios \n 2. Utilizar audio1.wav y audio2.wav de carpeta \n"))
+globalData1 = []
+globalData2 = []
+
+seleccion = int(input("Selecciona: \n 1. Grabar audios \n 2. Utilizar audio1.wav y audio2.wav de carpeta \n 3. Ingresar secuencias\n"))
 if seleccion==1:
     #Se graban dos audios para realizar operaciones
     input("Presione Enter para grabar el primer audio...")
     recordAudio(archivo1, stream)
     input("Presione Enter para grabar el segundo audio...")
     recordAudio(archivo2, stream)
-
+elif seleccion==2:
+    print("Cargados los archivos audio1.wav y audio2.wav");
+elif seleccion==3:
+    esAudio=False
+    cantidad = int(input("Tamaño de la secuencia x[n] "))
+    print(f"Ingresa {cantidad} números para x[n]:")
+    for i in range(cantidad):
+        numero = int(input(f"Ingresa el número {i + 1}: "))
+        globalData1.append(numero)
+    print(globalData1)    
+    cantidad = int(input("Tamaño de la secuencia h[n] "))
+    print(f"Ingresa {cantidad} números para h[n]:")
+    for i in range(cantidad):
+        numero = int(input(f"Ingresa el número {i + 1}: "))
+        globalData2.append(numero)
+    print(globalData2)
+else:
+    print("No es una opcion valida")
+    exit()
 #Cierra flujos de grabacion
 stream.close()
 audio.terminate()
@@ -289,97 +357,175 @@ menuMain = int(input("Menu O.B. \n 1.Suma\n 2.Resta\n 3.Amplificación\n 4.Atenu
 
 while menuMain != 0:  
     if menuMain == 1: #Suma
-        print("Reproduciendo audios...")
-        playAudio("audio1.wav")        
-        time.sleep(1)
-        playAudio("audio2.wav")        
-     #   plotAudios(archivo1, archivo2)
+        if esAudio:
+            print("Reproduciendo audios...")
+            playAudio("audio1.wav")        
+            time.sleep(1)
+            playAudio("audio2.wav")        
 
-        opSumaResta(archivo1, archivo2, suma, 1)
-     #   plotAudio(suma)
-        plotTresAudios(archivo1, archivo2, suma)
-        time.sleep(1)
-        playAudio("suma.wav")
+            opSumaResta(archivo1, archivo2, suma, 1)
+
+            plotTresAudios(archivo1, archivo2, suma)
+            time.sleep(1)
+            playAudio("suma.wav")
+        else:
+            waveData=[]
+            if len(globalData1) > len(globalData2):
+                waveData=[0 for i in range(0,len(globalData1))]
+            else:
+                waveData=[0 for i in range(0,len(globalData2))]
+            sumaresta(globalData1,globalData2,waveData,1)
+            print("x[n]:",globalData1)
+            print("h[n]:",globalData2)
+            print("Resultado: ",waveData)
+            plotArrays(globalData1,globalData2,waveData,"Suma")
     elif menuMain == 2: #Resta
-        print("Reproduciendo audios...")
-        playAudio("audio1.wav")        
-        time.sleep(1)
-        playAudio("audio2.wav")        
-        #plotAudios(archivo1, archivo2)
+        if esAudio:
+            print("Reproduciendo audios...")
+            playAudio("audio1.wav")        
+            time.sleep(1)
+            playAudio("audio2.wav")        
+            #plotAudios(archivo1, archivo2)
 
-        opSumaResta(archivo1, archivo2, resta, -1)
-        #plotAudio(resta)
-        plotTresAudios(archivo1, archivo2, resta)
-        time.sleep(1) #Para que no se reproduzcan inmediatamente
-        playAudio("resta.wav")
+            opSumaResta(archivo1, archivo2, resta, -1)
+            #plotAudio(resta)
+            plotTresAudios(archivo1, archivo2, resta)
+            time.sleep(1) #Para que no se reproduzcan inmediatamente
+            playAudio("resta.wav")
+        else:
+            waveData=[]
+            if len(globalData1) > len(globalData2):
+                waveData=[0 for i in range(0,len(globalData1))]
+            else:
+                waveData=[0 for i in range(0,len(globalData2))]
+            sumaresta(globalData1,globalData2,waveData,-1)
+            print("x[n]:",globalData1)
+            print("h[n]:",globalData2)
+            print("Resultado: ",waveData)
+            plotArrays(globalData1,globalData2,waveData,"Resta")
     elif menuMain == 3: #Amplificación
-        print("Reproduciendo audios...")
-        playAudio("audio1.wav")        
-       # plotAudio(archivo1)
-        factor = int(input("Ingrese el factor de amplificación: "))
-        opAmplificacion(archivo1, amplificacion, factor)
-        #plotAudio(amplificacion)
-        plotDosAudios(archivo1, amplificacion)
-        playAudio("amplificacion.wav")
+        if esAudio:
+            print("Reproduciendo audios...")
+            playAudio("audio1.wav")        
+           # plotAudio(archivo1)
+            factor = int(input("Ingrese el factor de amplificación: "))
+            opAmplificacion(archivo1, amplificacion, factor)
+            #plotAudio(amplificacion)
+            plotDosAudios(archivo1, amplificacion)
+            playAudio("amplificacion.wav")
+        else:
+            factor = int(input("Ingrese el factor de amplificación: "))
+            waveData=[0 for i in range(0,len(globalData1))]
+            amplif(globalData1,waveData,factor)
+            print("x[n]:",globalData1)
+            print("Resultado: ",waveData)
     elif menuMain == 4: #Atenuacion
-        print("Reproduciendo audios...")
-        playAudio("audio1.wav")        
-        #plotAudio(archivo1)
-        factor = int(input("Ingrese el factor de atenuacion: "))
-        factor=1/factor     
-        opAmplificacion(archivo1, atenuacion, factor)
-        #plotAudio(atenuacion)
-        plotDosAudios(archivo1, atenuacion)
-        playAudio("atenuacion.wav")
+        if esAudio:
+            print("Reproduciendo audios...")
+            playAudio("audio1.wav")        
+            #plotAudio(archivo1)
+            factor = int(input("Ingrese el factor de atenuacion: "))
+            factor=1/factor     
+            opAmplificacion(archivo1, atenuacion, factor)
+            #plotAudio(atenuacion)
+            plotDosAudios(archivo1, atenuacion)
+            playAudio("atenuacion.wav")
+        else:
+            factor = 1/int(input("Ingrese el factor de atenuacion: "))
+            waveData=[0 for i in range(0,len(globalData1))]
+            amplif(globalData1,waveData,factor)
+            print("x[n]:",globalData1)
+            print("Resultado: ",waveData)
     elif menuMain == 5: #Reflejo
-        print("Reproduciendo audio...")
-        playAudio("audio1.wav")
-        #plotAudio(archivo1)
+        if esAudio:
+            print("Reproduciendo audio...")
+            playAudio("audio1.wav")
+            #plotAudio(archivo1)
 
-        opReflejo(archivo1,ref)
-        #plotAudio(ref)
-        plotDosAudios(archivo1, ref)        
-        playAudio("reflejo.wav")
+            opReflejo(archivo1,ref)
+            #plotAudio(ref)
+            plotDosAudios(archivo1, ref)        
+            playAudio("reflejo.wav")
+        else:
+            waveData=[0 for i in range(0,len(globalData1))]
+            reflejo(globalData1,waveData)
+            print("x[n]:",globalData1)
+            print("Resultado: ",waveData)
     elif menuMain == 6: #Desplazamiento
-        print("Reproduciendo audio...")
-        playAudio("audio1.wav")
-        #plotAudio(archivo1)
-        factor = int(input("Ingrese el factor de desplazamiento: "))
-        
-        opDesplazamiento(archivo1, desplazamiento, factor)
-        #plotAudio(desplazamiento)
-        plotDosAudios(archivo1, desplazamiento)
-        playAudio("desplazamiento.wav")
+        if esAudio:
+            print("Reproduciendo audio...")
+            playAudio("audio1.wav")
+            #plotAudio(archivo1)
+            factor = int(input("Ingrese el factor de desplazamiento: "))
+            
+            opDesplazamiento(archivo1, desplazamiento, factor)
+            #plotAudio(desplazamiento)
+            plotDosAudios(archivo1, desplazamiento)
+            playAudio("desplazamiento.wav")
+        else:
+            factor = int(input("Ingrese el factor de desplazamiento: "))
+            waveData=[0 for i in range(0,len(globalData1))]
+            despla(globalData1,waveData,factor)
+            print("x[n]:",globalData1)
+            print("Resultado: ",waveData)
     elif menuMain == 7: #Diezmacion
-        print("Reproduciendo audio...")   
-        playAudio("audio1.wav")
-        plotAudio(archivo1)
-        factor = int(input("\nIngrese el factor de diezmacion: "))
-        
-        opDiezmacion(archivo1, diezmacion, factor)
-        plotAudio(diezmacion)
-       
-        playAudio("diezmacion.wav")
+        if esAudio:
+            print("Reproduciendo audio...")   
+            playAudio("audio1.wav")
+            plotAudio(archivo1)
+            factor = int(input("\nIngrese el factor de diezmacion: "))
+            
+            opDiezmacion(archivo1, diezmacion, factor)
+            plotAudio(diezmacion)
+           
+            playAudio("diezmacion.wav")
+        else:
+            factor = int(input("\nIngrese el factor de diezmacion: "))
+            leng = int(len(globalData1)/factor)+ len(data)%factor
+            waveData = [0 for i in range(leng)]
+            diezma(globalData1,waveData,factor)
+            print("x[n]:",globalData1)
+            print("Resultado: ",waveData)
     elif menuMain == 8: #Interpolacion
-        print("Reproduciendo audio...")
-        playAudio("audio1.wav")   
-        plotAudio(archivo1) 
-        factor = int(input("\nIngrese el factor de interpolacion "))
-        tipo = int(input("Ingrese el tipo de interpolacion (0=cero, 1=escalon, 2=lineal) "))   
+        if esAudio:
+            print("Reproduciendo audio...")
+            playAudio("audio1.wav")   
+            plotAudio(archivo1) 
+            factor = int(input("\nIngrese el factor de interpolacion "))
+            tipo = int(input("Ingrese el tipo de interpolacion (0=cero, 1=escalon, 2=lineal) "))   
 
-        opInterpolacion(archivo1, interpolacion, factor, tipo)
-        plotAudio(interpolacion)
-        playAudio("interpolacion.wav")
+            opInterpolacion(archivo1, interpolacion, factor, tipo)
+            plotAudio(interpolacion)
+            playAudio("interpolacion.wav")
+        else:           
+            factor = int(input("\nIngrese el factor de interpolacion "))
+            tipo = int(input("Ingrese el tipo de interpolacion (0=cero, 1=escalon, 2=lineal) "))
+            leng = int(len(globalData1)*factor)
+            waveData = [0 for i in range(leng)]
+            interpo(globalData1,waveData,factor,tipo)
+            print("x[n]:",globalData1)
+            print("Resultado: ",waveData)
     elif menuMain == 9: #Convolucion
-        print("Reproduciendo audios...")
-        playAudio("audio1.wav")        
-        time.sleep(1)
-        playAudio("audio2.wav")  
-        plotAudios(archivo1, archivo2)
+        if esAudio:
+            print("Reproduciendo audios...")
+            playAudio("audio1.wav")        
+            time.sleep(1)
+            playAudio("audio2.wav")  
+            plotAudios(archivo1, archivo2)
 
-        opConvol(archivo1, archivo2, conv)
-        plotAudio(conv)
-        playAudio("convol.wav")
+            opConvol(archivo1, archivo2, conv)
+            plotAudio(conv)
+            playAudio("convol.wav")
+        else:
+            if len(globalData2) > len(globalData1):
+                for j in range(len(globalData2)-len(globalData1)):
+                    globalData1.append(0)
+            waveData=[0 for i in range(0,len(globalData1)+len(globalData1)-1)]
+            convo(globalData1,globalData2,waveData)
+            print("x[n]:",globalData1)
+            print("h[n]:",globalData2)
+            print("Resultado: ",waveData)
+            plotArrays(globalData1,globalData2,waveData,"Convolucion")
     else:
         print("Ingrese una opcion valida");
 
