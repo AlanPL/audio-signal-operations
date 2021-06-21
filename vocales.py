@@ -166,15 +166,17 @@ def calcFFT(archivo1):
     global figureIndex
     figureIndex+=1
     index = 0
-    umbral = 100
+    umbral = 1000
     a = 0.90
 
     sampleRate, data1 = scipy.io.wavfile.read(archivo1)
+    data1 = data1[:,0]
     preenfasis = np.int16([0 for i in range(len(data1))])
     print(len(preenfasis))
 
+    absArr = np.absolute(data1)
     for n in range(1,len(data1)):
-        if abs(data1[n])>umbral:
+        if (absArr[n]>umbral):
             preenfasis[index] = data1[n]
             index=index+1
     preenfasis = [i for i in preenfasis if i != 0]
@@ -214,7 +216,7 @@ def calcFFT(archivo1):
 
 
 FORMAT = pyaudio.paInt16
-CHANNELS = 1
+CHANNELS = 2
 RATE = 22000
 CHUNK = 1025
 duracion = 2
