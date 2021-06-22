@@ -52,73 +52,6 @@ def playAudio(filename):
     p.terminate()
 
 
-def plotTresAudios(archivo1, archivo2, archivo3):
-    sampleRate, audioBuffer1 = scipy.io.wavfile.read(archivo1)
-    sampleRate, audioBuffer2 = scipy.io.wavfile.read(archivo2)
-    sampleRate, audioBuffer3 = scipy.io.wavfile.read(archivo3)
-
-    print('Longitud del arreglo de datos de cada audio: ', len(audioBuffer1))
-    duration = len(audioBuffer1)/sampleRate
-    time = np.arange(0, duration, 1/sampleRate)  # time vector
-    originalPlot = plt.figure(1)
-
-    plt.subplot(3, 1, 1)
-    plt.plot(time, audioBuffer1, '#e36b2c', label="Audio 1")
-    plt.ylabel('Amplitud')
-    plt.title("Audio 1, Audio 2 & Resultado")
-
-    plt.subplot(3, 1, 2)
-    plt.plot(time, audioBuffer2, '#6dc36d', label="Audio 2")
-    plt.ylabel('Amplitud')
-
-    plt.subplot(3, 1, 3)
-    plt.plot(time, audioBuffer3, '#109dfa', label="Resultado")
-
-    plt.legend()
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Amplitud')
-    plt.show()
-
-
-def plotDosAudios(archivo1, archivo2):
-    sampleRate, audioBuffer1 = scipy.io.wavfile.read(archivo1)
-    sampleRate, audioBuffer2 = scipy.io.wavfile.read(archivo2)
-
-    print('Longitud del arreglo de datos de cada audio: ', len(audioBuffer1))
-    duration = len(audioBuffer1)/sampleRate
-    time = np.arange(0, duration, 1/sampleRate)  # time vector
-    originalPlot = plt.figure(1)
-
-    plt.subplot(2, 1, 1)
-    plt.plot(time, audioBuffer1, '#6dc36d', label="Audio 1")
-    plt.ylabel('Amplitud')
-    plt.title("Audio 1 & Resultado")
-
-    plt.subplot(2, 1, 2)
-    plt.plot(time, audioBuffer2, '#109dfa', label="Audio 2")
-
-    plt.legend()
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Amplitud')
-    plt.show()
-
-
-def plotAudios(archivo1, archivo2):
-    sampleRate, audioBuffer1 = scipy.io.wavfile.read(archivo1)
-    sampleRate, audioBuffer2 = scipy.io.wavfile.read(archivo2)
-    print('Longitud del arreglo de datos de cada audio: ', len(audioBuffer1))
-    duration = len(audioBuffer1)/sampleRate
-    time = np.arange(0, duration, 1/sampleRate)  # time vector
-    originalPlot = plt.figure(1)
-    plt.plot(time, audioBuffer1, label="Audio 1")
-    plt.plot(time, audioBuffer2, label="Audio 2")
-    plt.legend()
-    plt.xlabel('Tiempo [s]')
-    plt.ylabel('Amplitud')
-    plt.title("Audio 1 & Audio 2")
-    plt.show()
-
-
 def plotAudio(archivo):
     global figureIndex
     figureIndex += 1
@@ -172,7 +105,7 @@ def calcFFT(archivo1):
     sampleRate, data1 = scipy.io.wavfile.read(archivo1)
     data1 = data1[:,0]
     preenfasis = np.int16([0 for i in range(len(data1))])
-    print(len(preenfasis))
+    #print(len(preenfasis))
 
     absArr = np.absolute(data1)
     for n in range(1,len(data1)):
@@ -183,7 +116,7 @@ def calcFFT(archivo1):
 
     for n in range(1,len(preenfasis)):
         preenfasis[n] = data1[n] -a*data1[n-1]
-    print(len(preenfasis))
+    #print(len(preenfasis))
 
     n = 480  # group size
     m = 80  # overlap size
@@ -206,13 +139,18 @@ def calcFFT(archivo1):
         average = average/len(chunks)-3
         averageFreq[i] = average 
 
-    duration = len(averageFreq)/sampleRate
-    time = np.arange(0,duration,1/sampleRate) #time vector
+
     sp = fftshift(fft(averageFreq))
     freq = fftshift(fftfreq(averageFreq.shape[-1]))
+    
     plt.plot(freq, sp.real, freq, sp.imag)
+
+    return sp.real
+
+
     #Spectrum = sf.rfft(data1, n=M)
     #maxFrequency(data1, 1/sampleRate)
+
 
 
 FORMAT = pyaudio.paInt16
@@ -228,29 +166,64 @@ stream = audio.open(format=FORMAT, channels=CHANNELS,
                     frames_per_buffer=CHUNK)
 figureIndex = 1
 
-seleccion = int(
-    input("Selecciona: \n 1. Grabar audio \n 2. Utilizar audio1.wav de carpeta \n"))
-if seleccion == 1:
-    input("Presione Enter para grabar el primer audio...")
-    recordAudio(archivo1, stream)
+
+
+menuMain =  int(input("Selecciona: \n 1. Grabar audio \n 2. Utilizar audio1.wav de carpeta \n 3. Salir \n"))
+subMenu = 0
+
+while menuMain != 3:
+
+    if menuMain == 1:
+        input("Presione Enter para grabar el primer audio...")
+        recordAudio(archivo1, stream)
+        subMenu = 1
+    elif menuMain == 2:  
+        subMenu = 1
+    else:
+        print("Ingrese una opcion valida")
+        subMenu=0
+
+    if subMenu == 1:
+
+        print("Reproduciendo audios...")
+        playAudio("audio1.wav")
+        plotAudio(archivo1)
+        reales=calcFFT(archivo1)
+        frecMax=max(reales)
+        frecMaxIndex = np.where(reales == frecMax)
+        print(len(reales)) #480
+        print(frecMax) 
+        print(frecMaxIndex)
+        
+
+        subMenu = int(input("Menu O.B. \n 1.Hombre\n 2.Mujer\n"))
+
+        if subMenu == 1 :
+            pass
+        elif subMenu == 2:
+
+            if frecMaxIndex[0].all()<220 and frecMaxIndex[0].all()<255:
+                print("VOCAL: A") 
+            elif frecMaxIndex[0].any()<320 and frecMaxIndex[0].any()<300:
+                print("VOCAL: E")
+            elif frecMaxIndex[0].any()<330 and frecMaxIndex[0].any()<310:
+                print("VOCAL: I") 
+            elif frecMaxIndex[0].all()<230 and frecMaxIndex[0].all()<260:
+                print("VOCAL: O")
+            elif frecMaxIndex[0].all()<240 and frecMaxIndex[0].all()<270:
+                print("VOCAL: U")
+        
+        plt.show()
+
+    menuMain =  int(input("Selecciona: \n 1. Grabar audio \n 2. Utilizar audio1.wav de carpeta \n 3. Salir \n"))
+
+
+
 
 stream.close()
 audio.terminate()
 
-menuMain = 1
 
-while menuMain != 0:
-    if menuMain == 1:  # Suma
-        print("Reproduciendo audios...")
-        playAudio("audio1.wav")
-        plotAudio(archivo1)
-        calcFFT(archivo1)
-        #playAudio("suma.wav")
-    elif menuMain == 2:  # Resta
-        time.sleep(1)
-
-    else:
-        print("Ingrese una opcion valida")
-    plt.show()
-    menuMain = int(input("Menu O.B. \n 1.Hombre\n 2.Mujer\n"))
+    
+    
 
